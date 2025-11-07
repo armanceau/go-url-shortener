@@ -34,7 +34,6 @@ type Config struct {
 // Elle recherche un fichier 'config.yaml' dans le dossier 'configs/'.
 // Elle définit également des valeurs par défaut si le fichier de config est absent ou incomplet.
 func LoadConfig() (*Config, error) {
-	fmt.Printf("print")
 	// on cherche dans le dossier 'configs' relatif au répertoire d'exécution.
 	viper.AddConfigPath("../../configs/config.yaml")
 	//referencer paramètres de config

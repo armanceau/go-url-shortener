@@ -82,30 +82,30 @@ func (m *UrlMonitor) isUrlAccessible(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	
-	client := &http.Client{}
-	//test request head
-	req, err := http.NewRequestWithContext(ctx, "HEAD", url, nil)
-	// Un code de statut 2xx ou 3xx indique que l'URL est accessible.
-	if err != nil {
-		log.Printf("[MONITOR] Erreur création requête HEAD '%s': %v", url, err)
-		return false
+	//tester l'accessibilité de la requete et gestion d'erreur par la méthode do.
+	do := func(method string) (int, error) {
+		req, err := http.NewRequestWithContext(ctx, method, url, nil)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("User-Agent", "go-url-shortener-monitor/1.0")
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return 0, err
+		}
+		// ferme toujours le body
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+		return resp.StatusCode, nil
 	}
-	req.Header.Set("User-Agent", "go-url-shortener-monitor/1.0")
-	// Déterminer l'accessibilité basée sur le code de statut HTTP.
-	resp, err := client.Do(req)
-	if err == nil {
-	  if resp.Body != nil {
-		resp.Body.Close()
-	  }
-	  //si pas d'erreur
-	  if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-	    return true
-	  }
-	  if resp.StatusCode != http.StatusMethodNotAllowed {
-	    return false
-	  }
+	if code, err := do(http.MethodHead); err == nil {
+		if code >= 200 && code < 400 {
+			return true
+		}
 	} else {
-		log.Printf("[MONITOR] Erreur d'accès HEAD '%s': %v (tentative GET)", url, err)
+		log.Printf("[MONITOR] Erreur HEAD '%s': %v (tentative GET)", url, err)
 	}
 
 	reqGet, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -114,8 +114,14 @@ func (m *UrlMonitor) isUrlAccessible(url string) bool {
 		return false
 	}
 	reqGet.Header.Set("User-Agent", "go-url-shortener-monitor/1.0")
-	
-	return resp.StatusCode >= 200 && resp.StatusCode < 400
+
+	//appeler la méthode do pour GET
+	if code, err := do(http.MethodGet); err == nil {
+		return code >= 200 && code < 400
+	} else {
+		log.Printf("[MONITOR] Erreur GET '%s': %v", url, err)
+		return false
+	}
 }
 
 // formatState est une fonction utilitaire pour rendre l'état plus lisible dans les logs.
