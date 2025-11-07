@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/armanceau/go-url-shortener/cmd"
-	"github.com/armanceau/go-url-shortener/internal/models" // ← Ajoute cette ligne
+	"github.com/armanceau/go-url-shortener/internal/models"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

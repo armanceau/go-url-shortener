@@ -25,47 +25,45 @@ pour une URL courte spécifique en utilisant son code.
 
 Exemple:
   url-shortener stats --code="xyz123"`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// TODO : Valider que le flag --code a été fourni.
-		// os.Exit(1) si erreur
+	Run: func(cobraCmd *cobra.Command, args []string) {
 
-		if( shortCodeFlag == "") {
-			fmt.Println("FATAL: Le flag --code est requis.")
+		if shortCodeFlag == "" {
+			fmt.Println("Erreur: Le flag --code est requis.")
 			os.Exit(1)
 		}
 
-		// TODO : Charger la configuration chargée globalement via cmd.cfg
 		cfg := cmd2.Cfg
 		if cfg == nil {
-        fmt.Println("Erreur: impossible de charger la configuration")
-        os.Exit(1)
-    	}
+			fmt.Println("Erreur: impossible de charger la configuration")
+			os.Exit(1)
+		}
 
-
-		// TODO 3: Initialiser la connexion à la BDD.
-		// log.Fatalf si erreur
-
-
+		db, err := gorm.Open(sqlite.Open(cfg.Database.Name), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("FATAL: Échec de la connexion à la base de données: %v", err)
+		}
 
 		sqlDB, err := db.DB()
 		if err != nil {
 			log.Fatalf("FATAL: Échec de l'obtention de la base de données SQL sous-jacente: %v", err)
 		}
+		defer sqlDB.Close()
 
+		linkRepo := repository.NewLinkRepository(db)
+		clickRepo := repository.NewClickRepository(db)
+		clickService := services.NewClickService(clickRepo)
+		linkService := services.NewLinkService(linkRepo, clickService)
 
-		// TODO S'assurer que la connexion est fermée à la fin de l'exécution de la commande grâce à defer
-
-
-		// TODO : Initialiser les repositories et services nécessaires NewLinkRepository & NewLinkService
-		linkRepo :=
-		linkService :=
-
-		// TODO 5: Appeler GetLinkStats pour récupérer le lien et ses statistiques.
-		// Attention, la fonction retourne 3 valeurs
-		// Pour l'erreur, utilisez gorm.ErrRecordNotFound
-		// Si erreur, os.Exit(1)
-
-
+		// Appeler GetLinkStats pour récupérer le lien et ses statistiques
+		link, totalClicks, err := linkService.GetLinkStats(shortCodeFlag)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				fmt.Printf("Erreur: aucun lien trouvé avec le code '%s'\n", shortCodeFlag)
+			} else {
+				fmt.Printf("Erreur: impossible de récupérer les statistiques: %v\n", err)
+			}
+			os.Exit(1)
+		}
 
 		fmt.Printf("Statistiques pour le code court: %s\n", link.ShortCode)
 		fmt.Printf("URL longue: %s\n", link.LongURL)
@@ -75,12 +73,14 @@ Exemple:
 
 // init() s'exécute automatiquement lors de l'importation du package.
 // Il est utilisé pour définir les flags que cette commande accepte.
+
 func init() {
-	// TODO : Définir le flag --code pour la commande stats.
-
-	// TODO Marquer le flag comme requis
-
-
-	// TODO : Ajouter la commande à RootCmd
-
+    // Définir le flag --code pour la commande stats
+    StatsCmd.Flags().StringVarP(&shortCodeFlag, "code", "c", "", "Le code court du lien")
+    
+    // Marquer le flag comme requis
+    StatsCmd.MarkFlagRequired("code")
+    
+    // Ajouter la commande à RootCmd
+    cmd2.RootCmd.AddCommand(StatsCmd)
 }
