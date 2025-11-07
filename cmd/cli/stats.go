@@ -14,8 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO : variable shortCodeFlag qui stockera la valeur du flag --code
-
+var shortCodeFlag string
 
 // StatsCmd représente la commande 'stats'
 var StatsCmd = &cobra.Command{
@@ -30,8 +29,17 @@ Exemple:
 		// TODO : Valider que le flag --code a été fourni.
 		// os.Exit(1) si erreur
 
+		if( shortCodeFlag == "") {
+			fmt.Println("FATAL: Le flag --code est requis.")
+			os.Exit(1)
+		}
 
 		// TODO : Charger la configuration chargée globalement via cmd.cfg
+		cfg := cmd2.Cfg
+		if cfg == nil {
+        fmt.Println("Erreur: impossible de charger la configuration")
+        os.Exit(1)
+    	}
 
 
 		// TODO 3: Initialiser la connexion à la BDD.
