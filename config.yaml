@@ -1,0 +1,13 @@
+server:
+  port: 8080
+  base_url: "http://localhost:8080"
+
+database:
+  name: "url_shortener.db"
+
+analytics:
+  buffer_size: 1000
+  worker_count: 5
+
+monitor:
+  interval_minutes: 5
