@@ -3,7 +3,6 @@ package models
 import "time"
 
 // Click représente un événement de clic sur un lien raccourci.
-// GORM utilisera ces tags pour créer la table 'clicks'.
 type Click struct {
 	ID        uint      `gorm:"primaryKey"`        // Clé primaire
 	LinkID    uint      `gorm:"index"`             // Clé étrangère vers la table 'links', indexée pour des requêtes efficaces
@@ -14,7 +13,6 @@ type Click struct {
 }
 
 // ClickEvent représente un événement de clic brut, destiné à être passé via un channel
-// Ce n'est pas un modèle GORM direct.
 type ClickEvent struct {
 	LinkID    uint      // ID du lien cliqué
 	Timestamp time.Time // Horodatage du clic
