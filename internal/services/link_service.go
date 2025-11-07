@@ -97,6 +97,16 @@ func (s *LinkService) CreateLink(longURL string) (*models.Link, error) {
 func (s *LinkService) GetLinkByShortCode(shortCode string) (*models.Link, error) {
 	link, err := s.linkRepo.GetLinkByShortCode(shortCode)
 	if err != nil {
+		// On laisse passer l'erreur gorm.ErrRecordNotFound pour la vérification d'unicité
+		return nil, err
+	}
+	return link, nil
+}
+
+// GetLinkByShortCodeWithMessage récupère un lien via son code court avec un message d'erreur personnalisé.
+func (s *LinkService) GetLinkByShortCodeWithMessage(shortCode string) (*models.Link, error) {
+	link, err := s.linkRepo.GetLinkByShortCode(shortCode)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("link with short code '%s' not found", shortCode)
 		}
@@ -109,7 +119,7 @@ func (s *LinkService) GetLinkByShortCode(shortCode string) (*models.Link, error)
 // Il interagit avec le LinkRepository pour obtenir le lien, puis avec le ClickRepository
 func (s *LinkService) GetLinkStats(shortCode string) (*models.Link, int, error) {
 	// Récupérer le lien par son shortCode
-	link, err := s.GetLinkByShortCode(shortCode)
+	link, err := s.GetLinkByShortCodeWithMessage(shortCode)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get link: %w", err)
 	}

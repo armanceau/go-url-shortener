@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"log" // Pour logger les informations ou erreurs de chargement de config
 
+	"github.com/armanceau/go-url-shortener/internal/models"
 	"github.com/spf13/viper" // La bibliothèque pour la gestion de configuration
 )
 
-// TODO Créer Config qui est la structure principale qui mappe l'intégralité de la configuration de l'application.
+// Config est la structure principale qui mappe l'intégralité de la configuration de l'application.
 // Les tags `mapstructure` sont utilisés par Viper pour mapper les clés du fichier de config
 // (ou des variables d'environnement) aux champs de la structure Go.
 type Config struct {
@@ -28,16 +29,20 @@ type Config struct {
 	Monitor struct {
 		IntervalMinutes int `mapstructure:"interval_minutes"`
 	} `mapstructure:"monitor"`
+
+	// Channel pour les événements de clic (ajouté dynamiquement)
+	ClickEventsChannel chan models.ClickEvent `mapstructure:"-"`
 }
 
 // LoadConfig charge la configuration de l'application en utilisant Viper.
 // Elle recherche un fichier 'config.yaml' dans le dossier 'configs/'.
 // Elle définit également des valeurs par défaut si le fichier de config est absent ou incomplet.
 func LoadConfig() (*Config, error) {
-	// on cherche dans le dossier 'configs' relatif au répertoire d'exécution.
-	viper.AddConfigPath("../../configs/config.yaml")
+	// on cherche dans le dossier 'configs' et à la racine du projet
+	viper.AddConfigPath("./configs")
+	viper.AddConfigPath(".")
 	//referencer paramètres de config
-	viper.SetConfigFile("config")
+	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
 	// Ces valeurs seront utilisées si les clés correspondantes ne sont pas trouvées dans le fichier de config
@@ -50,14 +55,13 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("analytics.worker_count", 5)
 	viper.SetDefault("monitor.interval_minutes", 5)
 
-
 	//gestion des erreurs
 	if err := viper.ReadInConfig(); err != nil {
 		log.Printf("Config non trouvée/illisible (%v), utilisation des défauts/env.", err)
 	} else {
 		log.Printf("Config chargée: %s", viper.ConfigFileUsed())
 	}
-	// TODO 4: Démapper (unmarshal) la configuration lue (ou les valeurs par défaut) dans la structure Config.
+	// Démapper (unmarshal) la configuration lue (ou les valeurs par défaut) dans la structure Config.
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
