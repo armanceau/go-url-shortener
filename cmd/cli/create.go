@@ -46,7 +46,7 @@ Exemple:
 		}
 
 		// Init DB 
-		db, err := gorm.Open(sqlite.Open(cfg.Database.Path), &gorm.Config{})
+		db, err := gorm.Open(sqlite.Open(cfg.Database.Name), &gorm.Config{})
 		if err != nil {
 			log.Fatalf("FATAL: Échec de la connexion à la base de données: %v", err)
 		}
@@ -59,7 +59,9 @@ Exemple:
 		defer sqlDB.Close() 
 
 		linkRepo := repository.NewLinkRepository(db)
-		linkService := services.NewLinkService(linkRepo)
+		clickRepo := repository.NewClickRepository(db)
+		clickService := services.NewClickService(clickRepo)
+		linkService := services.NewLinkService(linkRepo, clickService)
 		
 		// appel du  service pour créer le lien court
 		link, err := linkService.CreateLink(longURLFlag)

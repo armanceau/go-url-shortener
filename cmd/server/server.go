@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,13 +11,14 @@ import (
 
 	"github.com/armanceau/go-url-shortener/cmd"
 	"github.com/armanceau/go-url-shortener/internal/api"
+	"github.com/armanceau/go-url-shortener/internal/models"
 	"github.com/armanceau/go-url-shortener/internal/monitor"
 	"github.com/armanceau/go-url-shortener/internal/repository"
 	"github.com/armanceau/go-url-shortener/internal/services"
 	"github.com/armanceau/go-url-shortener/internal/workers"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -60,8 +60,8 @@ puis lance le serveur HTTP.`,
 		
 		// Le channel est bufferisé avec la taille configurée.
 		// Passez le channel et le clickRepo aux workers.
-		api.ClickEventsChannel = make(chan api.ClickEvent, cfg.Analytics.BufferSize)
-		workers.StartClickWorkers(api.ClickEventsChannel, clickRepo, cfg.Analytics.WorkerCount)
+		clickEventsChan := make(chan models.ClickEvent, cfg.Analytics.BufferSize)
+		workers.StartClickWorkers(cfg.Analytics.WorkerCount, clickEventsChan, clickRepo)
 
 		log.Printf("Channel d'événements de clic initialisé avec un buffer de %d. %d worker(s) de clics démarré(s).",
 			cfg.Analytics.BufferSize, cfg.Analytics.WorkerCount)
@@ -76,7 +76,7 @@ puis lance le serveur HTTP.`,
 
 		// Passez les services nécessaires aux fonctions de configuration des routes.
 		router := gin.Default()
-		api.SetupRoutes(router, linkService, clickService)
+		api.SetupRoutes(router, linkService)
 
 		// Pas toucher au log
 		log.Println("Routes API configurées.")
