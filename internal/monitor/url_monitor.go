@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"log"
+	"context"
 	"net/http"
 	"sync" // Pour protéger l'accès concurrentiel à knownStates
 	"time"
@@ -18,24 +19,23 @@ type UrlMonitor struct {
 	mu          sync.Mutex                // Mutex pour protéger l'accès concurrentiel à knownStates
 }
 
-// TODO finir cette fonction
-// NewUrlMonitor crée et retourne une nouvelle instance de UrlMonitor.
-// Attention: retourne un pointeur
+//retourner instance UrlMonitor.
 func NewUrlMonitor(linkRepo repository.LinkRepository, interval time.Duration) *UrlMonitor {
-	return
+	return &UrlMonitor{
+		linkRepo:    linkRepo,
+		interval:    interval,
+		knownStates: make(map[uint]bool),
+	}
 }
 
 // Start lance la boucle de surveillance périodique des URLs.
-// Cette fonction est conçue pour être lancée dans une goroutine séparée.
 func (m *UrlMonitor) Start() {
 	log.Printf("[MONITOR] Démarrage du moniteur d'URLs avec un intervalle de %v...", m.interval)
-	ticker := time.NewTicker(m.interval) // Crée un ticker qui envoie un signal à chaque intervalle
-	defer ticker.Stop()                  // S'assure que le ticker est arrêté quand Start se termine
+	ticker := time.NewTicker(m.interval)
+	defer ticker.Stop()
 
-	// Exécute une première vérification immédiatement au démarrage
 	m.checkUrls()
 
-	// Boucle principale du moniteur, déclenchée par le ticker
 	for range ticker.C {
 		m.checkUrls()
 	}
@@ -45,14 +45,15 @@ func (m *UrlMonitor) Start() {
 func (m *UrlMonitor) checkUrls() {
 	log.Println("[MONITOR] Lancement de la vérification de l'état des URLs...")
 
-	// TODO : Récupérer toutes les URLs longues actives depuis le linkRepo (GetAllLinks).
-	// Gérer l'erreur si la récupération échoue.
-	// Si erreur : log.Printf("[MONITOR] ERREUR lors de la récupération des liens pour la surveillance : %v", err)
-	links, err :=
-
+	//récupération de tout les liens méthode GetAllLinks
+	links, err := m.linkRepo.GetAllLinks()
+	if err != nil {
+		log.Printf("[MONITOR] ERREUR lors de la récupération des liens pour la surveillance : %v", err)
+		return
+	}
+	
 	for _, link := range links {
-		// TODO : Pour chaque lien, vérifier son accessibilité (isUrlAccessible).
-		currentState :=
+		currentState :=  m.isUrlAccessible(link.LongURL)
 
 		// Protéger l'accès à la map 'knownStates' car 'checkUrls' peut être exécuté concurremment
 		m.mu.Lock()
@@ -66,28 +67,61 @@ func (m *UrlMonitor) checkUrls() {
 				link.ShortCode, link.LongURL, formatState(currentState))
 			continue
 		}
-
-		// TODO : Comparer l'état actuel avec l'état précédent.
 		// Si l'état a changé, générer une fausse notification dans les logs.
-		// log.Printf("[NOTIFICATION] Le lien %s (%s) est passé de %s à %s !"
-
+		if previousState != currentState {
+			log.Printf("[NOTIFICATION] Le lien %s (%s) est passé de %s à %s !",
+				link.ShortCode, link.LongURL, formatState(previousState), formatState(currentState))
+		}
 	}
 	log.Println("[MONITOR] Vérification de l'état des URLs terminée.")
 }
 
 // isUrlAccessible effectue une requête HTTP HEAD pour vérifier l'accessibilité d'une URL.
 func (m *UrlMonitor) isUrlAccessible(url string) bool {
-	// TODO Définir un timeout pour éviter de bloquer trop longtemps (5 secondes c'est bien)
+	//timeout 5sec
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	//tester l'accessibilité de la requete et gestion d'erreur par la méthode do.
+	do := func(method string) (int, error) {
+		req, err := http.NewRequestWithContext(ctx, method, url, nil)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("User-Agent", "go-url-shortener-monitor/1.0")
 
-	// TODO: Effectuer une requête HEAD (plus légère que GET) sur l'URL.
-	// Un code de statut 2xx ou 3xx indique que l'URL est accessible.
-	// Si err : log.Printf("[MONITOR] Erreur d'accès à l'URL '%s': %v", url, err)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return 0, err
+		}
+		// ferme toujours le body
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+		return resp.StatusCode, nil
+	}
+	if code, err := do(http.MethodHead); err == nil {
+		if code >= 200 && code < 400 {
+			return true
+		}
+	} else {
+		log.Printf("[MONITOR] Erreur HEAD '%s': %v (tentative GET)", url, err)
+	}
 
-	// TODO Assurez-vous de fermer le corps de la réponse pour libérer les ressources
+	reqGet, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		log.Printf("[MONITOR] Erreur création requête GET '%s': %v", url, err)
+		return false
+	}
+	reqGet.Header.Set("User-Agent", "go-url-shortener-monitor/1.0")
 
-
-	// Déterminer l'accessibilité basée sur le code de statut HTTP.
-	return resp.StatusCode >= 200 && resp.StatusCode < 400 // Codes 2xx ou 3xx
+	//appeler la méthode do pour GET
+	if code, err := do(http.MethodGet); err == nil {
+		return code >= 200 && code < 400
+	} else {
+		log.Printf("[MONITOR] Erreur GET '%s': %v", url, err)
+		return false
+	}
 }
 
 // formatState est une fonction utilitaire pour rendre l'état plus lisible dans les logs.
