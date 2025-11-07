@@ -16,7 +16,7 @@ import (
 // Définition du jeu de caractères pour la génération des codes courts.
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// LinkService est une structure qui g fournit des méthodes pour la logique métier des liens.
+// LinkService est une structure qui fournit des méthodes pour la logique métier des liens.
 type LinkService struct {
 	linkRepo     repository.LinkRepository
 	clickService *ClickService
@@ -55,7 +55,7 @@ func (s *LinkService) CreateLink(longURL string) (*models.Link, error) {
 	const maxRetries = 5
 
 	for i := 0; i < maxRetries; i++ {
-		// Génère un code de 6 caractères)
+		// Génère un code de 6 caractères
 		code, err := s.GenerateShortCode(6)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate short code: %w", err)
@@ -100,7 +100,7 @@ func (s *LinkService) GetLinkByShortCode(shortCode string) (*models.Link, error)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("link with short code '%s' not found", shortCode)
 		}
-		return nil, fmt.Errorf("database error : %w", err)
+		return nil, err
 	}
 	return link, nil
 }
