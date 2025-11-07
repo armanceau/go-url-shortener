@@ -3,8 +3,8 @@ package workers
 import (
 	"log"
 
-	"github.com/axellelanca/urlshortener/internal/models"
-	"github.com/axellelanca/urlshortener/internal/repository" // Nécessaire pour interagir avec le ClickRepository
+	"github.com/armanceau/go-url-shortener/internal/models"
+	"github.com/armanceau/go-url-shortener/internal/repository" // Nécessaire pour interagir avec le ClickRepository
 )
 
 // StartClickWorkers lance un pool de goroutines "workers" pour traiter les événements de clic.

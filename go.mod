@@ -1,4 +1,4 @@
-module github.com/axellelanca/urlshortener
+module github.com/armanceau/go-url-shortener
 
 go 1.24.3
 

@@ -10,8 +10,8 @@ import (
 
 	"gorm.io/gorm" // Nécessaire pour la gestion spécifique de gorm.ErrRecordNotFound
 
-	"github.com/axellelanca/urlshortener/internal/models"
-	"github.com/axellelanca/urlshortener/internal/repository" // Importe le package repository
+	"github.com/armanceau/go-url-shortener/internal/models"
+	"github.com/armanceau/go-url-shortener/internal/repository" // Importe le package repository
 )
 
 // Définition du jeu de caractères pour la génération des codes courts.

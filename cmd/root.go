@@ -3,7 +3,7 @@ package cmd
 import (
 	"log"
 
-	"github.com/axellelanca/urlshortener/internal/config"
+	"github.com/armanceau/go-url-shortener/internal/config"
 )
 
 // cfg est la variable globale qui contiendra la configuration chargée.

@@ -1,10 +1,8 @@
 package services
 
 import (
-	"fmt"
-
-	"github.com/axellelanca/urlshortener/internal/models"
-	"github.com/axellelanca/urlshortener/internal/repository" // Importe le package repository
+	"github.com/armanceau/go-url-shortener/internal/models"
+	"github.com/armanceau/go-url-shortener/internal/repository" // Importe le package repository
 )
 
 // TODO : créer la struct
