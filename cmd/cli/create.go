@@ -77,6 +77,7 @@ Exemple:
 
 // init() s'exécute automatiquement lors de l'importation du package.
 // Il est utilisé pour définir les flags que cette commande accepte.
+
 func init() {
 	
  CreateCmd.Flags().StringVarP(&longURLFlag, "url", "u", "", "L'URL longue à raccourcir")
